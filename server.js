@@ -11,13 +11,12 @@ dotenv.config();
 
 const client = createClient();
 
-
 client.on('error', err => console.log('Redis Client Error', err));
 
 async function updateRedisConfig() {
     try {
-        await client.sendCommand(['CONFIG', 'SET', 'maxmemory', '1000mb']);
-        console.log('[LOG] Maxmemory updated to 1000mb');
+        await client.sendCommand(['CONFIG', 'SET', 'maxmemory', '8000mb']);
+        console.log('[LOG] Maxmemory updated to 8000mb');
 
         await client.sendCommand(['CONFIG', 'SET', 'maxmemory-policy', 'allkeys-lru']);
         console.log('[LOG] Maxmemory-policy updated to allkeys-lru');
@@ -89,7 +88,6 @@ app.get("/api/v1/cache/stats", async (req, res) => {
 
 app.delete('/api/v1/cache/cleardatabase', async (req, res) => {
     try {
-
         const { secret } = req.query;
         if(secret == process.env.ADMIN_SECRET) {
             await client.sendCommand(['FLUSHDB', 'ASYNC']);
