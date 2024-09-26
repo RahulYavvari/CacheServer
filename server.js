@@ -1,15 +1,17 @@
 import express from "express";
 import { createClient } from 'redis';
 import bodyParser from "body-parser";
-
-const app = express();
-const client = createClient();
+import dotenv from "dotenv";
 
 const PORT = 9000;
 
+const app = express();
 app.use(bodyParser.json());
+dotenv.config();
 
-// Redis Server
+const client = createClient();
+
+
 client.on('error', err => console.log('Redis Client Error', err));
 
 async function updateRedisConfig() {
@@ -86,16 +88,20 @@ app.get("/api/v1/cache/stats", async (req, res) => {
 });
 
 app.delete('/api/v1/cache/cleardatabase', async (req, res) => {
-    const { reqSecret } = req.query;
-    if(reqSecret == process.env.ADMIN_SECRET) {
-        await client.flushdb((err, succeeded) => {
-            console.log("[LOG] Flush RedisDB Status: ", succeeded); // will be true if success
-        });
-        res.status(200).json({status: "success", message: "Redis database flushed successfully"});
-    } else {
-        res.status(400).json({status: "failed", message: "Unauthorized access!"});
-    }
+    try {
 
+        const { secret } = req.query;
+        if(secret == process.env.ADMIN_SECRET) {
+            await client.sendCommand(['FLUSHDB', 'ASYNC']);
+            res.status(200).json({status: "success", message: "cache database flushed successfully"});
+        } else {
+            res.status(400).json({status: "failed", message: "Unauthorized access!"});
+        }
+    } catch(err) {
+        console.log("[LOG] Error while flushing db", err);
+        res.status(500).json({status: "failed", errorCode: "9200", message: "Some error occured while flushing the cache db"})
+    }
+        
 });
 
 app.listen(process.env.PORT || PORT, async () => {
